@@ -4,6 +4,7 @@ from pydantic import BaseModel
 from state import WorkflowState
 from agents.extraction import extraction_agent
 from agents.escalation import escalation_agent
+from agents.task_creation import task_creation_agent
 
 app = FastAPI()
 
@@ -21,5 +22,6 @@ def run(data: Input):
 
     state = extraction_agent(state)
     state = escalation_agent(state)
+    state = task_creation_agent(state)
 
     return state
