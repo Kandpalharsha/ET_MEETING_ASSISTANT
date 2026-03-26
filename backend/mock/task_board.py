@@ -1,43 +1,59 @@
-class TaskBoard:
-    def __init__(self):
-        self.tasks = {}
-
-    def create(self, task):
-        self.tasks[task["id"]] = task
-        return task["id"]
 from datetime import datetime, timedelta
 
-class TaskBoard:
+
+class MockTaskBoard:
+    """
+    In-memory mock of an ET editorial task board (mock Jira/Notion).
+    Singleton — shared across all agents.
+    """
+
     def __init__(self):
-        self.tasks = {}
+        self._tasks: dict[str, dict] = {}
 
-    def create(self, task):
-        task["last_updated"] = datetime.now().isoformat()
-        task["status"] = "pending"
-        self.tasks[task["id"]] = task
-        return task["id"]
+    def create(self, task: dict) -> str:
+        tid = task["id"]
+        self._tasks[tid] = {**task, "last_updated": datetime.now().isoformat()}
+        return tid
 
-    def exists(self, description):
-        return any(t["description"] == description for t in self.tasks.values())
+    def get(self, task_id: str) -> dict | None:
+        return self._tasks.get(task_id)
 
-    def get_all(self):
-        return list(self.tasks.values())
+    def get_all(self) -> list[dict]:
+        return list(self._tasks.values())
 
-    def update_status(self, task_id, status):
-        if task_id in self.tasks:
-            self.tasks[task_id]["status"] = status
-            self.tasks[task_id]["last_updated"] = datetime.now().isoformat()
+    def exists(self, title: str) -> bool:
+        return any(t["title"] == title for t in self._tasks.values())
 
-    def simulate_stall(self, task_id):
-        if task_id in self.tasks:
-            self.tasks[task_id]["last_updated"] = (
-                datetime.now() - timedelta(hours=49)
-            ).isoformat()
-    def exists(self, description):
-        return any(t["description"] == description for t in self.tasks.values())
+    def update_status(self, task_id: str, status: str):
+        if task_id in self._tasks:
+            self._tasks[task_id]["status"] = status
+            self._tasks[task_id]["last_updated"] = datetime.now().isoformat()
 
-    def get_all(self):
-        return list(self.tasks.values())
+    def mark_done(self, task_id: str):
+        """NEW: Mark task as completed"""
+        if task_id in self._tasks:
+            self._tasks[task_id]["status"] = "done"
+            self._tasks[task_id]["last_updated"] = datetime.now().isoformat()
+
+    def send_nudge(self, task_id: str):
+        """Mock Slack nudge — logs that notification was sent."""
+        if task_id in self._tasks:
+            self._tasks[task_id]["nudge_sent"] = True
+            self._tasks[task_id]["last_updated"] = datetime.now().isoformat()
+
+    def simulate_stall(self, task_id: str):
+        """
+        Demo helper: rewinds last_updated by 49h so the
+        tracker sees it as stalled.
+        """
+        if task_id in self._tasks:
+            fake_time = datetime.now() - timedelta(hours=49)
+            self._tasks[task_id]["last_updated"] = fake_time.isoformat()
+            self._tasks[task_id]["status"] = "pending"
+
+    def clear(self):
+        self._tasks = {}
 
 
-task_board = TaskBoard()
+# Singleton
+task_board = MockTaskBoard()
