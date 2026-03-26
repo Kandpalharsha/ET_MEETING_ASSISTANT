@@ -1,4 +1,4 @@
-from typing import TypedDict, Optional, List
+from typing import TypedDict, Optional, Literal
 from datetime import datetime
 import uuid
 
@@ -7,9 +7,14 @@ class ActionItem(TypedDict):
     id: str
     description: str
     owner: Optional[str]
+    owner_confidence: float
     deadline: Optional[str]
-    priority: str
-    status: str
+    priority: Literal["high", "medium", "low"]
+    category: str
+    status: Literal["pending", "in_progress", "stalled", "done", "escalated"]
+    created_at: str
+    last_updated: str
+    nudge_sent: bool
 
 
 class AuditEntry(TypedDict):
@@ -20,32 +25,68 @@ class AuditEntry(TypedDict):
     input_summary: str
     output_summary: str
     reasoning: str
-    status: str
+    status: Literal["success", "failure", "recovery", "escalated"]
+
+
+class EscalationRecord(TypedDict):
+    id: str
+    timestamp: str
+    trigger: str
+    attempted_recoveries: list[str]
+    resolution: Optional[str]
+    requires_human: bool
 
 
 class WorkflowState(TypedDict):
+    # Input
     transcript_raw: str
     workflow_id: str
 
-    decisions: List[str]
-    action_items: List[ActionItem]
+    # Enrichment
+    et_context: str
 
-    audit_log: List[AuditEntry]
+    # Extraction outputs
+    decisions: list[str]
+    action_items: list[ActionItem]
+    extraction_complete: bool
 
-    # 🔥 NEW
+    # Task creation
+    tasks_created: list[str]
+    failed_tasks: list[dict]
+
+    # Tracker
+    stalled_tasks: list[str]
+    nudges_sent: list[str]
+
+    # Error handling
     current_error: Optional[str]
     recovery_attempts: int
+    escalations: list[EscalationRecord]
+
+    # Audit trail
+    audit_log: list[AuditEntry]
+
+    # Status
+    workflow_status: Literal["running", "completed", "failed", "awaiting_human"]
 
 
 def new_workflow(transcript: str) -> WorkflowState:
     return WorkflowState(
         transcript_raw=transcript,
         workflow_id=str(uuid.uuid4())[:8],
+        et_context="",
         decisions=[],
         action_items=[],
-        audit_log=[],
+        extraction_complete=False,
+        tasks_created=[],
+        failed_tasks=[],
+        stalled_tasks=[],
+        nudges_sent=[],
         current_error=None,
         recovery_attempts=0,
+        escalations=[],
+        audit_log=[],
+        workflow_status="running",
     )
 
 

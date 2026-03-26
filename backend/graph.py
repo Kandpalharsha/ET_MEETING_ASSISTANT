@@ -9,9 +9,7 @@ from agents.tracker import tracker_agent
 
 def route_after_extraction(state: WorkflowState):
     # If no tasks → stop
-    if not state["action_items"]:
-        return END
-    return "escalation"
+    return "escalation" if state["action_items"] else END
 
 
 def route_after_escalation(state: WorkflowState):
@@ -77,16 +75,7 @@ def build_graph():
         {
             END: END
         }
-    )
-    
-    
-    
-    
-    
-    
-    
-    
-    
+    )  
     
     
 
