@@ -1,42 +1,44 @@
-from state import WorkflowState
+from state import WorkflowState, make_audit_entry
 
-# simple org mapping
-ORG = {
-    "tech": "Vikram Iyer",
-    "legal": "Sunita Rao",
-    "finance": "Ravi Krishnan",
-    "events": "Meera Joshi",
-    "editorial": "Rakesh Sharma"
-}
 
 def escalation_agent(state: WorkflowState) -> WorkflowState:
-    updated_items = []
+    new_audit = list(state["audit_log"])
 
-    for task in state["action_items"]:
-        owner = task.get("owner")
+    # 🔥 retry extraction
+    if state.get("current_error") == "extraction_failed":
 
-        # if no owner → try to resolve
-        if not owner:
-            desc = task["description"].lower()
+        attempts = state.get("recovery_attempts", 0)
 
-            resolved = None
-            for key, person in ORG.items():
-                if key in desc:
-                    resolved = person
-                    break
+        if attempts < 2:
+            audit = make_audit_entry(
+                agent="escalation_agent",
+                action="retry_extraction",
+                input_summary="Extraction failed",
+                output_summary=f"Retry attempt {attempts + 1}",
+                reasoning="Transient error, retrying",
+                status="recovery"
+            )
 
-            task["owner"] = resolved if resolved else "Rakesh Sharma"
+            return {
+                **state,
+                "audit_log": new_audit + [audit],
+                "current_error": None,
+                "recovery_attempts": attempts + 1
+            }
 
-        updated_items.append(task)
+        # escalate after retries
+        audit = make_audit_entry(
+            agent="escalation_agent",
+            action="escalated_to_human",
+            input_summary="Extraction failed",
+            output_summary="Human intervention required",
+            reasoning="Max retries reached",
+            status="escalated"
+        )
 
-    audit_entry = {
-        "agent": "escalation_agent",
-        "action": "owner_resolution",
-        "output": f"{len(updated_items)} tasks processed"
-    }
+        return {
+            **state,
+            "audit_log": new_audit + [audit]
+        }
 
-    return {
-        **state,
-        "action_items": updated_items,
-        "audit_log": state["audit_log"] + [audit_entry]
-    }
+    return state

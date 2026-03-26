@@ -25,6 +25,16 @@ def route_after_task_creation(state: WorkflowState):
 def route_after_tracker(state: WorkflowState):
     return END
 
+def route_after_extraction(state):
+    return "escalation" if state.get("current_error") else "task_creation"
+
+
+def route_after_escalation(state):
+    if state.get("current_error") is None and state.get("recovery_attempts", 0) > 0:
+        return "extraction"  
+    return "task_creation"
+
+
 
 def build_graph():
     g = StateGraph(WorkflowState)
@@ -68,6 +78,17 @@ def build_graph():
             END: END
         }
     )
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
 
     return g.compile()
 

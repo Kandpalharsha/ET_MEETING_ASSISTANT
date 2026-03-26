@@ -26,9 +26,15 @@ class AuditEntry(TypedDict):
 class WorkflowState(TypedDict):
     transcript_raw: str
     workflow_id: str
+
     decisions: List[str]
     action_items: List[ActionItem]
+
     audit_log: List[AuditEntry]
+
+    # 🔥 NEW
+    current_error: Optional[str]
+    recovery_attempts: int
 
 
 def new_workflow(transcript: str) -> WorkflowState:
@@ -38,6 +44,8 @@ def new_workflow(transcript: str) -> WorkflowState:
         decisions=[],
         action_items=[],
         audit_log=[],
+        current_error=None,
+        recovery_attempts=0,
     )
 
 
