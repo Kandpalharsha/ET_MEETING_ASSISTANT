@@ -255,4 +255,4 @@ async def get_audit():
 
 @app.get("/health")
 async def health():
-    return {"status": "ok"}
+    return {"status": "ok 200"}
